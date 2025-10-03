@@ -1,0 +1,193 @@
+-- Sigma Spy Universal Menu Lua
+-- Hoàn chỉnh cho mọi game Roblox
+-- Menu circular, di chuyển được, nhiều màu
+-- Kiểm tra AntiCheat/AntiKick và log thông báo
+-- Không giới hạn registers
+
+--=== Services ===--
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+--=== Global Configs ===--
+local Config = {
+    MenuColor = Color3.fromRGB(0, 170, 255),
+    Expanded = false,
+    AntiKickEnabled = false,
+    ESPEnabled = false,
+    PlayerTab = {},
+    WorldTab = {},
+    MiscTab = {},
+    ToolsTab = {},
+}
+
+--=== Utility Functions ===--
+local function round(n)
+    return math.floor(n + 0.5)
+end
+
+local function notify(msg)
+    -- Chat notification
+    LocalPlayer:Kick(msg) -- tạm dùng kick như log (hoặc bạn có thể tạo BillBoardGui nhỏ góc trái)
+end
+
+local function checkAntiCheat()
+    -- Kiểm tra một số AntiCheat phổ biến
+    local detected = false
+    if game:GetService("Workspace"):FindFirstChild("AntiCheat") then
+        detected = true
+    end
+    return detected
+end
+
+--=== Menu UI ===--
+local ScreenGui = Instance.new("ScreenGui", CoreGui)
+ScreenGui.Name = "SigmaSpyUniversalMenu"
+
+-- Menu circular button
+local OpenButton = Instance.new("TextButton", ScreenGui)
+OpenButton.Size = UDim2.new(0,50,0,50)
+OpenButton.Position = UDim2.new(0,50,0,50)
+OpenButton.Text = "☰"
+OpenButton.BackgroundColor3 = Config.MenuColor
+OpenButton.TextColor3 = Color3.new(1,1,1)
+OpenButton.AutoButtonColor = true
+OpenButton.Active = true
+OpenButton.Draggable = true
+
+-- Frame chứa menu
+local MenuFrame = Instance.new("Frame", ScreenGui)
+MenuFrame.Size = UDim2.new(0,300,0,400)
+MenuFrame.Position = UDim2.new(0,120,0,50)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+MenuFrame.BorderSizePixel = 0
+MenuFrame.Visible = false
+
+-- Tab buttons
+local Tabs = {"Home","ESP","Player","World","Misc","Tools"}
+local TabButtons = {}
+local TabFrames = {}
+
+for i,tabName in pairs(Tabs) do
+    local btn = Instance.new("TextButton", MenuFrame)
+    btn.Size = UDim2.new(0,80,0,30)
+    btn.Position = UDim2.new(0,(i-1)*50,0,0)
+    btn.Text = tabName
+    btn.BackgroundColor3 = Config.MenuColor
+    btn.TextColor3 = Color3.new(1,1,1)
+    TabButtons[tabName] = btn
+
+    local frame = Instance.new("ScrollingFrame", MenuFrame)
+    frame.Size = UDim2.new(1,0,1, -40)
+    frame.Position = UDim2.new(0,0,0,40)
+    frame.BackgroundTransparency = 1
+    frame.Visible = false
+    frame.CanvasSize = UDim2.new(0,0,0,0)
+    TabFrames[tabName] = frame
+
+    btn.MouseButton1Click:Connect(function()
+        for t,fr in pairs(TabFrames) do
+            fr.Visible = (t==tabName)
+        end
+    end)
+end
+
+-- Open/Close menu
+OpenButton.MouseButton1Click:Connect(function()
+    Config.Expanded = not Config.Expanded
+    MenuFrame.Visible = Config.Expanded
+end)
+
+--=== Home Tab Features ===--
+local HomeFrame = TabFrames["Home"]
+
+local homeFeatures = {
+    {Name="Show Ping/FPS",Function=function(v) Config.ShowPingFPS=v end},
+    {Name="Check AntiKick",Function=function(v) Config.AntiKickEnabled=v end},
+    {Name="Check Game Exploit",Function=function() notify(checkAntiCheat() and "AntiCheat Detected!" or "No AntiCheat detected") end},
+    {Name="Teleport To Spawn",Function=function() LocalPlayer.Character:MoveTo(workspace.SpawnLocation.Position) end},
+    {Name="Rejoin Game",Function=function() game:GetService("TeleportService"):Teleport(game.PlaceId) end},
+    {Name="Time of Day Toggle",Function=function() game.Lighting.TimeOfDay = (game.Lighting.TimeOfDay=="14:00:00" and "0:00:00" or "14:00:00") end},
+    {Name="Gravity Slider",Function=function() workspace.Gravity = workspace.Gravity==196.2 and 100 or 196.2 end},
+    {Name="WalkSpeed Reset",Function=function() LocalPlayer.Character.Humanoid.WalkSpeed=16 end},
+    {Name="JumpPower Reset",Function=function() LocalPlayer.Character.Humanoid.JumpPower=50 end},
+    {Name="Server Info",Function=function() notify("Server ID: "..game.JobId) end},
+}
+
+for i,feat in pairs(homeFeatures) do
+    local b = Instance.new("TextButton",HomeFrame)
+    b.Size = UDim2.new(0,200,0,30)
+    b.Position = UDim2.new(0,10,0,(i-1)*35)
+    b.Text = feat.Name
+    b.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    b.TextColor3 = Color3.new(1,1,1)
+    b.MouseButton1Click:Connect(function() feat.Function(true) end)
+end
+
+--=== ESP Tab Features ===--
+local ESPFrame = TabFrames["ESP"]
+Config.ESPPlayer = false
+
+local ESPFeatures = {
+    {Name="ESP Toggle",Function=function(v) Config.ESPEnabled=v end},
+    {Name="Show Health Bar",Function=function(v) Config.ShowHealth=v end},
+    {Name="Show Name",Function=function(v) Config.ShowName=v end},
+    {Name="Show Distance",Function=function(v) Config.ShowDistance=v end},
+    {Name="Highlight Team",Function=function(v) Config.HighlightTeam=v end},
+    {Name="Hitbox Toggle",Function=function(v) Config.Hitbox=v end},
+    {Name="Outline Toggle",Function=function(v) Config.Outline=v end},
+    {Name="Head Dot",Function=function(v) Config.HeadDot=v end},
+    {Name="Tracer Lines",Function=function(v) Config.Tracer=v end},
+    {Name="ESP Refresh",Function=function() ESPUpdate() end},
+}
+
+local function ESPUpdate()
+    for i,v in pairs(Players:GetPlayers()) do
+        if v~=LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local root=v.Character.HumanoidRootPart
+            if Config.ESPEnabled then
+                if not root:FindFirstChild("ESPBox") then
+                    local box=Instance.new("BillboardGui",root)
+                    box.Name="ESPBox"
+                    box.Size=UDim2.new(2,0,3,0)
+                    box.Adornee=root
+                    box.AlwaysOnTop=true
+                    local text=Instance.new("TextLabel",box)
+                    text.Size=UDim2.new(1,0,1,0)
+                    text.BackgroundTransparency=1
+                    text.TextColor3=Color3.new(1,0,0)
+                    text.TextStrokeTransparency=0.5
+                    text.Text=Config.ShowName and v.Name or ""
+                end
+            else
+                if root:FindFirstChild("ESPBox") then root.ESPBox:Destroy() end
+            end
+        end
+    end
+end
+
+for i,feat in pairs(ESPFeatures) do
+    local b = Instance.new("TextButton",ESPFrame)
+    b.Size = UDim2.new(0,200,0,30)
+    b.Position = UDim2.new(0,10,0,(i-1)*35)
+    b.Text = feat.Name
+    b.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    b.TextColor3 = Color3.new(1,1,1)
+    b.MouseButton1Click:Connect(function() feat.Function(true) end)
+end
+
+--=== Các Tab Khác (Player, World, Misc, Tools) ===--
+for _,tabName in pairs({"Player","World","Misc","Tools"}) do
+    local f = TabFrames[tabName]
+    for i=1,10 do
+        local b = Instance.new("TextButton",f)
+        b.Size = UDim2.new(0,200,0,30)
+        b.Position = UDim2.new(0,10,0,(i-1)*35)
+        b.Text = tabName.." Feature "..i
+        b.BackgroundColor3 = Color3.fromRGB
