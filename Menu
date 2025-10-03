@@ -1,0 +1,138 @@
+-- Tạo menu như hướng dẫn trước
+local menu = Instance.new("ScreenGui")
+menu.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0.3, 0, 0.5, 0)
+frame.Position = UDim2.new(0.35, 0, 0.25, 0)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 80)
+frame.BorderSizePixel = 0
+frame.Parent = menu
+
+local title = Instance.new("TextLabel")
+title.Text = "Menu ESP"
+title.Size = UDim2.new(1, 0, 0.15, 0)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+title.Parent = frame
+
+-- ESP chức năng
+local espEnabled = false
+local nameEnabled = false
+local boxEnabled = false
+
+-- Hàm vẽ ESP
+local function updateESP()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            -- Xóa ESP cũ
+            if player.Character:FindFirstChild("ESPBox") then
+                player.Character.ESPBox:Destroy()
+            end
+            if boxEnabled then
+                local box = Instance.new("BoxHandleAdornment")
+                box.Name = "ESPBox"
+                box.Adornee = player.Character.HumanoidRootPart
+                box.Size = Vector3.new(4, 6, 2)
+                box.Color3 = Color3.fromRGB(255, 0, 0)
+                box.Transparency = 0.5
+                box.AlwaysOnTop = true
+                box.Parent = player.Character
+            end
+            if nameEnabled then
+                if not player.Character:FindFirstChild("ESPName") then
+                    local nameTag = Instance.new("BillboardGui")
+                    nameTag.Name = "ESPName"
+                    nameTag.Adornee = player.Character.HumanoidRootPart
+                    nameTag.Size = UDim2.new(0, 100, 0, 40)
+                    nameTag.AlwaysOnTop = true
+                    local text = Instance.new("TextLabel")
+                    text.Size = UDim2.new(1, 0, 1, 0)
+                    text.BackgroundTransparency = 1
+                    text.Text = player.Name
+                    text.TextColor3 = Color3.fromRGB(0, 255, 0)
+                    text.TextScaled = true
+                    text.Parent = nameTag
+                    nameTag.Parent = player.Character
+                end
+            else
+                if player.Character:FindFirstChild("ESPName") then
+                    player.Character.ESPName:Destroy()
+                end
+            end
+        end
+    end
+end
+
+-- Nút bật/tắt ESP
+local espBtn = Instance.new("TextButton")
+espBtn.Text = "Bật/Tắt ESP"
+espBtn.Size = UDim2.new(0.8, 0, 0.15, 0)
+espBtn.Position = UDim2.new(0.1, 0, 0.18, 0)
+espBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 220)
+espBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+espBtn.Font = Enum.Font.Gotham
+espBtn.TextScaled = true
+espBtn.Parent = frame
+
+espBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    if espEnabled then
+        updateESP()
+    else
+        -- Xóa ESP
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("ESPBox") then
+                player.Character.ESPBox:Destroy()
+            end
+            if player.Character and player.Character:FindFirstChild("ESPName") then
+                player.Character.ESPName:Destroy()
+            end
+        end
+    end
+end)
+
+-- Nút bật/tắt Box
+local boxBtn = Instance.new("TextButton")
+boxBtn.Text = "Box ESP"
+boxBtn.Size = UDim2.new(0.8, 0, 0.15, 0)
+boxBtn.Position = UDim2.new(0.1, 0, 0.35, 0)
+boxBtn.BackgroundColor3 = Color3.fromRGB(60, 220, 120)
+boxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+boxBtn.Font = Enum.Font.Gotham
+boxBtn.TextScaled = true
+boxBtn.Parent = frame
+
+boxBtn.MouseButton1Click:Connect(function()
+    boxEnabled = not boxEnabled
+    if espEnabled then
+        updateESP()
+    end
+end)
+
+-- Nút bật/tắt Name
+local nameBtn = Instance.new("TextButton")
+nameBtn.Text = "Tên ESP"
+nameBtn.Size = UDim2.new(0.8, 0, 0.15, 0)
+nameBtn.Position = UDim2.new(0.1, 0, 0.52, 0)
+nameBtn.BackgroundColor3 = Color3.fromRGB(220, 120, 60)
+nameBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+nameBtn.Font = Enum.Font.Gotham
+nameBtn.TextScaled = true
+nameBtn.Parent = frame
+
+nameBtn.MouseButton1Click:Connect(function()
+    nameEnabled = not nameEnabled
+    if espEnabled then
+        updateESP()
+    end
+end)
+
+-- Tự động cập nhật ESP khi có người chơi mới
+game.Players.PlayerAdded:Connect(function()
+    if espEnabled then
+        updateESP()
+    end
+end)
